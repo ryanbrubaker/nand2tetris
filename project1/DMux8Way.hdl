@@ -1,0 +1,58 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/1/DMux8Way.hdl
+/**
+ * 8-way demultiplexor:
+ * [a, b, c, d, e, f, g, h] = [in, 0,  0,  0,  0,  0,  0,  0] if sel = 000
+ *                            [0, in,  0,  0,  0,  0,  0,  0] if sel = 001
+ *                            [0,  0, in,  0,  0,  0,  0,  0] if sel = 010
+ *                            [0,  0,  0, in,  0,  0,  0,  0] if sel = 011
+ *                            [0,  0,  0,  0, in,  0,  0,  0] if sel = 100
+ *                            [0,  0,  0,  0,  0, in,  0,  0] if sel = 101
+ *                            [0,  0,  0,  0,  0,  0, in,  0] if sel = 110
+ *                            [0,  0,  0,  0,  0,  0,  0, in] if sel = 111
+ */
+CHIP DMux8Way {
+    IN in, sel[3];
+    OUT a, b, c, d, e, f, g, h;
+
+    PARTS:
+    Not(in=sel[0], out=bit0NotSet);
+    Not(in=sel[1], out=bit1NotSet);
+    Not(in=sel[2], out=bit2NotSet);
+    
+    And(a=bit2NotSet, b=bit1NotSet, out=aChanTemp);
+    And(a=aChanTemp, b=bit0NotSet, out=aChan);
+    
+    And(a=bit2NotSet, b=bit1NotSet, out=bChanTemp);
+    And(a=bChanTemp, b=sel[0], out=bChan);
+   
+    And(a=bit2NotSet, b=sel[1], out=cChanTemp);
+    And(a=cChanTemp, b=bit0NotSet, out=cChan);
+
+    And(a=bit2NotSet, b=sel[1], out=dChanTemp);
+    And(a=dChanTemp, b=sel[0], out=dChan);
+   
+    And(a=sel[2], b=bit1NotSet, out=eChanTemp);
+    And(a=eChanTemp, b=bit0NotSet, out=eChan);
+   
+    And(a=sel[2], b=bit1NotSet, out=fChanTemp);
+    And(a=fChanTemp, b=sel[0], out=fChan);
+   
+    And(a=sel[2], b=sel[1], out=gChanTemp);
+    And(a=gChanTemp, b=bit0NotSet, out=gChan);
+
+    And(a=sel[2], b=sel[1], out=hChanTemp);
+    And(a=hChanTemp, b=sel[0], out=hChan);
+
+    And(a=in, b=aChan, out=a);
+    And(a=in, b=bChan, out=b);
+    And(a=in, b=cChan, out=c);
+    And(a=in, b=dChan, out=d);
+    And(a=in, b=eChan, out=e);
+    And(a=in, b=fChan, out=f);
+    And(a=in, b=gChan, out=g);
+    And(a=in, b=hChan, out=h);
+    
+}
