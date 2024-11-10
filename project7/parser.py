@@ -1,3 +1,6 @@
+
+from command_type import CommandType
+
 class Parser:
 
     def __init__(self, filename):
@@ -13,8 +16,9 @@ class Parser:
             #
         #
 
-        self._num_lines = len(self._code_lines) - 1
-        self._current_line = -1
+        self._num_lines = len(self._code_lines)
+        self._current_line = 0
+        self._set_current_tokens()
     #
 
     def has_more_lines(self):
@@ -23,19 +27,30 @@ class Parser:
 
     def advance(self):
         self._current_line += 1
-        self._current_command = self._code_lines[self._current_line]
+        self._set_current_tokens()
     #
 
     def command_type(self):
-        return 0
+        return CommandType.COMMAND_TYPE_MAP[self._command_tokens[0]]
     #
 
     def arg1(self):
-        return self._current_command
+        if self.command_type() == CommandType.C_ARITHMETIC:
+            return self._command_tokens[0]
+        elif self.command_type() == CommandType.C_PUSH or self.command_type() == CommandType.C_POP:
+            return self._command_tokens[1]
     #
 
     def arg2(self):
-        return 0
+        if self.command_type() == CommandType.C_PUSH or self.command_type() == CommandType.C_POP:
+            return self._command_tokens[2]
     #
-    
+
+
+    def _set_current_tokens(self):
+        if self._current_line < self._num_lines:
+            self._current_command = self._code_lines[self._current_line]
+            self._command_tokens = self._current_command.split(" ")
+        #
+    #
 #
