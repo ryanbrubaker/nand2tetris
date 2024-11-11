@@ -6,7 +6,7 @@ from pop_command import PopCommand
 
 class CodeWriter:
     def __init__(self, filename):
-        self._output_file = open(filename + ".asm", "w")
+        self._output_file = open(filename, "w")
     #
 
 
