@@ -4,7 +4,6 @@ D=M
 A=A-1
 D={}
 M=D
-D=A
 """
 
 LOGIC_CODE_FRAGMENT = """@SP
