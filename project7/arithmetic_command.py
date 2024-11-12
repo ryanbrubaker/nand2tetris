@@ -1,12 +1,10 @@
 BINARY_CODE_FRAGMENT = """@SP
-A=M-1
+AM=M-1
 D=M
 A=A-1
 D={}
 M=D		
 D=A
-@SP
-M=D+1
 """
 
 LOGIC_CODE_FRAGMENT = """@SP
@@ -20,18 +18,17 @@ D;{}
 @SP
 A=M
 M=0
-@SP
-M=M+1
 @{}
 0;JMP
 {}
 @SP
 A=M
 M=-1
+{}
 @SP
 M=M+1
-{}
 """
+
 
 NEG_CODE_FRAGMENT = """@SP
 A=M-1
