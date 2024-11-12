@@ -3,30 +3,26 @@ AM=M-1
 D=M
 A=A-1
 D={}
-M=D		
+M=D
 D=A
 """
 
 LOGIC_CODE_FRAGMENT = """@SP
 AM=M-1
 D=M
-@SP
-AM=M-1
+A=A-1
 D=M-D
 @{}
 D;{}
-@SP
-A=M
-M=0
+D=0
 @{}
 0;JMP
 {}
-@SP
-A=M
-M=-1
+D=-1
 {}
 @SP
-M=M+1
+A=M-1
+M=D
 """
 
 
