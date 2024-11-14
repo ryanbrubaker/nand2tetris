@@ -37,8 +37,10 @@ class Parser:
     def arg1(self):
         if self.command_type() == CommandType.C_ARITHMETIC:
             return self._command_tokens[0]
-        elif self.command_type() == CommandType.C_PUSH or self.command_type() == CommandType.C_POP:
+        elif (self.command_type() == CommandType.C_PUSH or self.command_type() == CommandType.C_POP or
+               self.command_type() == CommandType.C_LABEL or self.command_type() == CommandType.C_IF):
             return self._command_tokens[1]
+    
     #
 
     def arg2(self):
