@@ -38,13 +38,15 @@ class Parser:
         if self.command_type() == CommandType.C_ARITHMETIC:
             return self._command_tokens[0]
         elif (self.command_type() == CommandType.C_PUSH or self.command_type() == CommandType.C_POP or
-               self.command_type() == CommandType.C_LABEL or self.command_type() == CommandType.C_IF):
+               self.command_type() == CommandType.C_LABEL or self.command_type() == CommandType.C_IF or
+               self.command_type() == CommandType.C_GOTO or self.command_type() == CommandType.C_FUNCTION):
             return self._command_tokens[1]
     
     #
 
     def arg2(self):
-        if self.command_type() == CommandType.C_PUSH or self.command_type() == CommandType.C_POP:
+        if (self.command_type() == CommandType.C_PUSH or self.command_type() == CommandType.C_POP or
+                self.command_type() == CommandType.C_FUNCTION):
             return self._command_tokens[2]
     #
 

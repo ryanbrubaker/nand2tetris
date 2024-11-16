@@ -31,6 +31,12 @@ if os.path.isfile(sys.argv[1]):
             writer.write_label(vm_parser.arg1())
         elif command_type == CommandType.C_IF:
             writer.write_if(vm_parser.arg1())
+        elif command_type == CommandType.C_GOTO:
+            writer.write_goto(vm_parser.arg1())
+        elif command_type == CommandType.C_FUNCTION:
+            writer.write_function(vm_parser.arg1(), vm_parser.arg2())
+        elif command_type == CommandType.C_RETURN:
+            writer.write_return()
 
         
         vm_parser.advance()
