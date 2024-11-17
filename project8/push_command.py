@@ -31,18 +31,6 @@ M=D
 M=M+1
 """
 
-PUSH_STATIC_FRAGMENT = """@{}
-D=A
-@{}
-A=D+A
-D=M
-@SP
-A=M
-M=D
-@SP
-M=M+1
-"""
-
 
 PUSH_POINTER_FRAGMENT = """@{}
 D=M
@@ -72,7 +60,7 @@ POINTER_LOC_MAP = {
 
 class PushCommand:
     
-    def __init__(self, segment, index):
+    def __init__(self, segment, index, filename):
         self._code = ""
         if segment == "constant":
             self._code = PUSH_CONSTANT_FRAGMENT.format(index)
@@ -81,7 +69,7 @@ class PushCommand:
         elif segment == "temp":
             self._code = PUSH_TEMP_FRAGMENT.format("R5", index) 
         elif segment == "static":
-            self._code = PUSH_STATIC_FRAGMENT.format(STATIC_LOC_MAP[segment], index)
+            self._code = PUSH_POINTER_FRAGMENT.format(filename + "." + index)
         elif segment == "pointer":
             self._code = PUSH_POINTER_FRAGMENT.format(POINTER_LOC_MAP[index])
 

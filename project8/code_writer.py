@@ -183,7 +183,7 @@ class CodeWriter:
     #
 
     def write_push_pop(self, command, segment, index):
-        command_code = self._command_factory(command, segment, index)
+        command_code = self._command_factory(command, segment, index, self._filename)
         self._output_file.write(command_code.code)
     #
 
@@ -197,7 +197,6 @@ class CodeWriter:
         self._output_file.write(GOTO_FRAGMENT.format(self._filename, label))
 
     def write_function(self, label, num_locals):
-        #self._output_file.write(FUNCTION_DECL_FRAGMENT.format(self._filename, label))
         self._output_file.write(FUNCTION_DECL_FRAGMENT.format(label))
         locals_init_code = FUNCTION_INIT_LOCALS_FRAGMENT * int(num_locals)
         self._output_file.write(locals_init_code)
@@ -228,11 +227,11 @@ class CodeWriter:
         self._output_file.close()
     #
 
-    def _command_factory(self, command, segment, index):
+    def _command_factory(self, command, segment, index, filename):
         if command == CommandType.C_PUSH:
-            return PushCommand(segment, index)
+            return PushCommand(segment, index, filename)
         elif command == CommandType.C_POP:
-            return PopCommand(segment, index)
+            return PopCommand(segment, index, filename)
     #
 
 #
