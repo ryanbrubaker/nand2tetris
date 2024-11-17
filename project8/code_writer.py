@@ -156,11 +156,21 @@ RETURN_LABEL_FRAGMENT = """({})
 """
 
 
+BOOT_CODE_FRAGMENT = """@256
+D=A
+@SP
+M=D
+"""
+
 class CodeWriter:
     RETURN_CALL_COUNT = 0
 
     def __init__(self, filename):
         self._output_file = open(filename, "w")
+        self._filename = ""
+
+        self._output_file.write(BOOT_CODE_FRAGMENT)
+        self.write_call("Sys.init", 0)
     #
 
     def set_filename(self, filename):
@@ -190,9 +200,6 @@ class CodeWriter:
         #self._output_file.write(FUNCTION_DECL_FRAGMENT.format(self._filename, label))
         self._output_file.write(FUNCTION_DECL_FRAGMENT.format(label))
         locals_init_code = FUNCTION_INIT_LOCALS_FRAGMENT * int(num_locals)
-        print(label)
-        print(num_locals)
-        print(locals_init_code)
         self._output_file.write(locals_init_code)
         self._output_file.write(SET_SP_PAST_LOCALS_FRAGMENT)
 
