@@ -22,8 +22,8 @@ else:
     base_dir = os.path.normpath(argument)
     for file in os.listdir(argument):
         if file.endswith(".vm"):
-            files_to_process.append(base_dir + "\\" + file)
-    output_path = base_dir + "\\" + os.path.basename(base_dir) + ".asm"
+            files_to_process.append(base_dir + "/" + file)
+    output_path = base_dir + "/" + os.path.basename(base_dir) + ".asm"
 
 
 writer = CodeWriter(output_path)    
