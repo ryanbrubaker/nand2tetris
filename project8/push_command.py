@@ -8,7 +8,7 @@ M=M+1
 """
 
 PUSH_VIRTUAL_FRAGMENT = """@{}
-D=M
+D={}
 @{}
 A=D+A
 D=M
@@ -19,20 +19,20 @@ M=D
 M=M+1
 """
 
-PUSH_TEMP_FRAGMENT = """@{}
-D=A
-@{}
-A=D+A
-D=M
-@SP
-A=M
-M=D
-@SP
-M=M+1
-"""
+# PUSH_TEMP_FRAGMENT = """@{}
+# D=A
+# @{}
+# A=D+A
+# D=M
+# @SP
+# A=M
+# M=D
+# @SP
+# M=M+1
+# """
 
 
-PUSH_POINTER_FRAGMENT = """@{}
+PUSH_DIRECT_FRAGMENT = """@{}
 D=M
 @SP
 A=M
@@ -45,13 +45,10 @@ VIRTUAL_KEY_MAP = {
     "local":    "LCL",
     "argument": "ARG",
     "this":     "THIS",
-    "that":     "THAT"  
+    "that":     "THAT",
+    "temp":     "R5"
 }
 
-STATIC_LOC_MAP = {
-    "temp":     5,
-    "static":   16
-}
 
 POINTER_LOC_MAP = {
     "0":    "THIS",
@@ -64,14 +61,13 @@ class PushCommand:
         self._code = ""
         if segment == "constant":
             self._code = PUSH_CONSTANT_FRAGMENT.format(index)
-        elif segment == "local" or segment == "argument" or segment == "this" or segment == "that":
-            self._code = PUSH_VIRTUAL_FRAGMENT.format(VIRTUAL_KEY_MAP[segment], index)
-        elif segment == "temp":
-            self._code = PUSH_TEMP_FRAGMENT.format("R5", index) 
+        elif segment == "local" or segment == "argument" or segment == "this" or segment == "that" or segment == "temp":
+            A_or_M = "A" if segment == "temp" else "M"
+            self._code = PUSH_VIRTUAL_FRAGMENT.format(VIRTUAL_KEY_MAP[segment], A_or_M, index)
         elif segment == "static":
-            self._code = PUSH_POINTER_FRAGMENT.format(filename + "." + index)
+            self._code = PUSH_DIRECT_FRAGMENT.format(filename + "." + index)
         elif segment == "pointer":
-            self._code = PUSH_POINTER_FRAGMENT.format(POINTER_LOC_MAP[index])
+            self._code = PUSH_DIRECT_FRAGMENT.format(POINTER_LOC_MAP[index])
 
         
     @property
