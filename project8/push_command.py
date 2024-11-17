@@ -19,6 +19,18 @@ M=D
 M=M+1
 """
 
+PUSH_TEMP_FRAGMENT = """@{}
+D=A
+@{}
+A=D+A
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+"""
+
 PUSH_STATIC_FRAGMENT = """@{}
 D=A
 @{}
@@ -30,6 +42,7 @@ M=D
 @SP
 M=M+1
 """
+
 
 PUSH_POINTER_FRAGMENT = """@{}
 D=M
@@ -65,7 +78,9 @@ class PushCommand:
             self._code = PUSH_CONSTANT_FRAGMENT.format(index)
         elif segment == "local" or segment == "argument" or segment == "this" or segment == "that":
             self._code = PUSH_VIRTUAL_FRAGMENT.format(VIRTUAL_KEY_MAP[segment], index)
-        elif segment == "temp" or segment == "static":
+        elif segment == "temp":
+            self._code = PUSH_TEMP_FRAGMENT.format("R5", index) 
+        elif segment == "static":
             self._code = PUSH_STATIC_FRAGMENT.format(STATIC_LOC_MAP[segment], index)
         elif segment == "pointer":
             self._code = PUSH_POINTER_FRAGMENT.format(POINTER_LOC_MAP[index])
