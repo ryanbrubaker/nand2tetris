@@ -1,0 +1,255 @@
+/**
+* Main class that implements a Conway's Game of Life Simulation.
+*
+* The random number generator used comes from the following thread on the nand2tetris question forum:
+*     http://nand2tetris-questions-and-answers-forum.52.s1.nabble.com/Pseudo-Random-Number-Generator-td4026059.html
+*/ 
+class Main 
+{
+   static int NUM_ROWS;
+   static int NUM_COLS;
+   static boolean started;
+
+   static Array PREV_STATE;
+   static Array NEXT_STATE;
+
+   // Hack screen is 512 x 256
+   function void main() 
+   {
+      var int rowNum;
+      var int colNum;
+
+
+      let started = false;
+      let NUM_ROWS = 30;
+      let NUM_COLS = 62;
+      let test = 3;
+
+      // Initialize the arrays we will use to store game state
+      let PREV_STATE = Array.new(NUM_ROWS);
+      let NEXT_STATE = Array.new(NUM_ROWS);
+      
+      let rowNum = 0;
+      while (rowNum < NUM_ROWS)
+      {
+         let PREV_STATE[rowNum] = Array.new(NUM_COLS);
+         let NEXT_STATE[rowNum] = Array.new(NUM_COLS);
+         let rowNum = rowNum + 1;
+      }
+   
+
+      // Give instructions to the user
+      do Output.printString("Press r to (re)start Conway's Game of Life");
+      do Output.println();
+      do Output.printString("Press q to quit");
+      do Output.println(); 
+
+      do LCGRandom.setSeed(0);
+      do Main.run();
+
+      return;
+   }
+
+
+   
+   /**
+   * Main application loop that listens for user keyboard presses
+   * and itereates over each cycle in the game.
+   */
+   function void run() 
+   {
+      var char key;
+      var boolean exit;
+      let exit = false;
+      
+      while (~exit) 
+      {
+         while (key = 0) 
+         {
+            let key = Keyboard.keyPressed();
+
+            if (started)
+            {
+               do Sys.wait(1000);
+               do Main.calculateNextState();
+               do Main.drawCells();
+            }
+         }
+         
+         if (key = 81)           // Q key
+         { 
+            let exit = true; 
+         }
+
+         if (key = 82)           // R key
+         { 
+            let started = false;
+            do Main.restart(); 
+            let started = true;
+         }     
+    
+         // Wait for the key to be released
+         while (~(key = 0)) 
+         {
+            let key = Keyboard.keyPressed();
+            if (started)
+            {
+               do Sys.wait(1000);
+               do Main.calculateNextState();
+               do Main.drawCells();
+            }
+         }
+      }
+      return;
+   }
+
+
+   // Clear the screen, draw the grid, and seed the cells that are alive
+   function void restart()
+   {
+      do Screen.clearScreen();
+      do Screen.setColor(true);
+      do Main.seedLivingCells();
+      do Main.drawCells();
+      return;
+   }
+
+
+   /**
+   * Starts out by filling the board with each cell having a 50% chance
+   * to start out "live."
+   */
+   function void seedLivingCells()
+   {
+      var int rowNum;
+      var int colNum;
+      var int randomNum;
+      var Array tempArray;
+
+      let rowNum = 0;
+      while (rowNum < NUM_ROWS)
+      {
+         let colNum = 0;
+         while (colNum < NUM_COLS)
+         {
+            let randomNum = LCGRandom.randRange(0, 100);
+            let tempArray = NEXT_STATE[rowNum];
+            let tempArray[colNum] = (randomNum > 50);
+            let colNum = colNum + 1;
+         }
+         let rowNum = rowNum + 1;
+      }
+      return;
+   }
+
+   function void calculateNextState()
+   {
+      var int rowNum;
+      var int colNum;
+      var Array nextArray;
+      var Array prevArray;
+      
+      let rowNum = 0;
+      while (rowNum < NUM_ROWS)
+      {
+         let colNum = 0;
+         while (colNum < NUM_COLS)
+         {
+            let nextArray = NEXT_STATE[rowNum];
+            let prevArray = PREV_STATE[rowNum];
+            let prevArray[colNum] = nextArray[colNum];
+            let colNum = colNum + 1;
+         }
+         let rowNum = rowNum + 1;
+      }
+
+      let rowNum = 0;
+      while (rowNum < NUM_ROWS)
+      {
+         let colNum = 0;
+         while (colNum < NUM_COLS)
+         {
+            let nextArray = NEXT_STATE[rowNum];
+            let nextArray[colNum] = Main.calculateCellLife(rowNum, colNum);
+            let colNum = colNum + 1;
+         }
+         let rowNum = rowNum + 1;
+      }
+      return;
+   }
+
+
+
+   /**
+   * Calculate the # of cells alive around the current position
+   * to determine whether the give cell's state should be live for
+   * the next iteration.
+   */
+   function boolean calculateCellLife(int row, int col)
+   {
+      var int count;
+      var int rowNum;
+      var int colNum;
+      var Array tempArray;
+      var boolean retVal;
+
+      let count = 0;
+      let rowNum = row - 1;
+
+      while (rowNum < (row + 2))
+      {
+         let colNum = col - 1;
+         while (colNum < (col + 2))
+         {
+            if (rowNum > -1 & rowNum < NUM_ROWS & colNum > -1 & colNum < NUM_COLS & (~(rowNum = row) | ~(colNum = col)))
+            {
+               let tempArray = PREV_STATE[rowNum];
+               if (tempArray[colNum])
+               {
+                  let count = count + 1;
+               }
+            }
+            let colNum = colNum + 1;
+         }
+         let rowNum = rowNum + 1;
+      }
+      
+      let tempArray = PREV_STATE[row];
+      if (tempArray[col])
+      {
+         let retVal = ~(count < 2 | count > 3);
+      }
+      else
+      {
+         let retVal = (count = 3);
+      }
+      return retVal;
+   }
+
+
+
+   /**
+   * Draw the latest state of the game.
+   */
+   function void drawCells()
+   {
+      var int rowNum;
+      var int colNum;
+      var Array tempArray;
+
+      let rowNum = 0;
+      while (rowNum < NUM_ROWS)
+      {
+         let colNum = 0;
+         while (colNum < NUM_COLS)
+         {
+            let tempArray = NEXT_STATE[rowNum];
+            do Screen.setColor(tempArray[colNum]);
+            do Screen.drawRectangle((colNum + 1) * 8, (rowNum + 1) * 8, ((colNum + 1) * 8) + 8, ((rowNum + 1) * 8) + 8);
+            let colNum = colNum + 1;
+         }
+         let rowNum = rowNum + 1;
+      }
+      return;
+   }
+}
