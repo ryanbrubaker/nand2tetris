@@ -63,7 +63,7 @@ class CodeWriter:
 
     def write_call(self, function, num_args):
         ControlCommand.write_call(self._output_file, self._filename, function, num_args)
-    #s
+    #
 
 
     def close(self):
