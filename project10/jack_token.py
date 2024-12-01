@@ -7,13 +7,19 @@ class JackToken:
     INT_CONST = 3
     STRING_CONST = 4
 
-    EOF = ''
+    TYPE_MAP = {
+        KEYWORD:        "keyword",
+        SYMBOL:         "symbol",
+        IDENTIFIER:     "identifier",
+        INT_CONST:      "intConst",
+        STRING_CONST:   "stringConst"
+    }
 
     SYMBOLS = ["{", "}", "(", ")", "[", "]", ".", ",", ";", "+", "-", "*", "/", "&", "|", "<", ">", "=", "~"]
      
-    CLASS, METHOD, FUNCTION, CONSTRUCTOR, INT , BOOLEAN = 0, 1, 2, 3, 4, 5
-    CHAR, VOID, VAR, STATIC, FIELD, LET, DO = 6, 7, 8, 9, 10, 11, 12
-    IF, ELSE, WHILE, RETURN, TRUE, FALSE, NULL, THIS = 13, 14, 15, 16, 17, 18, 19, 20
+    CLASS, METHOD, FUNCTION, CONSTRUCTOR, INT, BOOLEAN = 10, 11, 12, 13, 14, 15
+    CHAR, VOID, VAR, STATIC, FIELD, LET, DO = 16, 17, 18, 19, 20, 21, 22
+    IF, ELSE, WHILE, RETURN, TRUE, FALSE, NULL, THIS = 23, 24, 25, 26, 27, 28, 29, 30
 
     KEYWORDS = {
         "class":           CLASS,
@@ -56,8 +62,11 @@ class JackToken:
     
     @property
     def value(self):
-        if self._type == JackToken.IDENTIFIER:
-            return self._value
-        #
+        return self._value
+    #
+
+    def to_string(self):
+        tag_name = JackToken.TYPE_MAP[self.type]
+        return f"<{tag_name}> {self.value} </{tag_name}>\n"
     #
 #

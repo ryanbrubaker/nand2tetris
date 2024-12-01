@@ -16,7 +16,6 @@ class JackTokenizer:
 
     def has_more_tokens(self):
         return self._input_length > 0 and self._char_index < self._input_length
-        #return self._current_char != JackToken.EOF
     #
 
     def advance(self):
@@ -40,14 +39,24 @@ class JackTokenizer:
             self.__read_next_character()
         else:
             raise Exception("Unrecognized character")
- 
-        
+        #
+    #
+
+    @property
+    def current_token(self):
+        return self._current_token
+    
+    
     def token_type(self):
         return self._current_token.type
     #
 
+    def token_value(self):
+        return self._current_token.value
+    
+
     def keyword(self):
-        return self._current_token_str
+        return JackToken.KEYWORDS[self._current_token_str]
 
     def symbol(self):
         if self._current_token_str == "&":
@@ -141,11 +150,9 @@ class JackTokenizer:
         self._char_index += 1
         if self._char_index < self._input_length:
             self._current_char = self._input_text[self._char_index]
-        #self._current_char = self._input_file.read(1)
 
     def __is_whitespace(self, current_char):
         return current_char.isspace()
-        #return current_char == ' ' or current_char == '\n' or current_char == '\t'
     
     def __is_start_of_comment(self, current_char):
         return current_char == '/'

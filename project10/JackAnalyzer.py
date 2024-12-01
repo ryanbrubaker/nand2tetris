@@ -1,8 +1,8 @@
 import os
 import sys
 
+from compilation_engine import CompilationEngine
 from jack_token import JackToken
-from jack_tokenizer import JackTokenizer
 
 
 files_to_process = []
@@ -23,24 +23,7 @@ else:
 for jack_file in files_to_process:
     input_file = open(jack_file)
     output_file = open(jack_file.replace(".jack", ".xml"), "w")
-    output_file.write("<tokens>\n")
 
-
-    tokenizer = JackTokenizer(input_file)
-    while tokenizer.has_more_tokens():
-        tokenizer.advance()
-        if tokenizer.token_type() == JackToken.IDENTIFIER:
-            output_file.write(f"<identifier> {tokenizer.identifier()} </identifier>\n")
-        elif tokenizer.token_type() == JackToken.KEYWORD:
-            output_file.write(f"<keyword> {tokenizer.keyword()} </keyword>\n")
-        elif tokenizer.token_type() == JackToken.SYMBOL:
-            output_file.write(f"<symbol> {tokenizer.symbol()} </symbol>\n")
-        elif tokenizer.token_type() == JackToken.INT_CONST:
-            output_file.write(f"<integerConstant> {tokenizer.int_val()} </integerConstant>\n")
-        elif tokenizer.token_type() == JackToken.STRING_CONST:
-            output_file.write(f"<stringConstant> {tokenizer.string_val()} </stringConstant>\n")
-
-
-    output_file.write("</tokens>")
-    output_file.close()
+    compilation_engine = CompilationEngine(input_file, output_file)
+    compilation_engine.compile_class()
 #
