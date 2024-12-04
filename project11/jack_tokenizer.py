@@ -74,7 +74,7 @@ class JackTokenizer:
         return self._current_token_str
 
     def int_val(self):
-        return self._current_token_str
+        return int(self._current_token_str)
 
     def string_val(self):
         return self._current_token_str

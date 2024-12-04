@@ -2,6 +2,9 @@
 from jack_token import JackToken
 from jack_tokenizer import JackTokenizer
 from symbol_table import SymbolTable
+from vm_writer import VMWriter
+
+
 
 
 class CompilationEngine:
@@ -13,6 +16,7 @@ class CompilationEngine:
         self._tokenizer = JackTokenizer(input_file)
         self._class_symbol_table = SymbolTable()
         self._subroutine_symbol_table = SymbolTable()
+        self._vm_writer = VMWriter(output_file)
 
         self._current_class_name = ""
     #
@@ -74,7 +78,7 @@ class CompilationEngine:
                     (self._tokenizer.keyword() == JackToken.CONSTRUCTOR or self._tokenizer.keyword() == JackToken.FUNCTION or
                         self._tokenizer.keyword() == JackToken.METHOD)):
             
-            if self._subroutine_symbol_table.define("this", self._current_class_name, SymbolTable.ARG)
+            self._subroutine_symbol_table.define("this", self._current_class_name, SymbolTable.ARG)
             self.__consume_current_token()
             
             if (self.__is_language_type() or 
@@ -83,19 +87,22 @@ class CompilationEngine:
             else:
                 raise Exception("Unexpected token")
 
+            function_name = self._tokenizer.identifier()
             self.__consume_expected_token(JackToken.IDENTIFIER)
 
             self.__consume_expected_symbol("(")
             self.compile_parameter_list()
             self.__consume_expected_symbol(")")
 
-            self.compile_subroutine_body()
+            self.compile_subroutine_body(function_name)
         #
     #
 
 
     def compile_parameter_list(self):
+
         if self.__is_language_type():
+            
             var_type = self._tokenizer.current_token.value
             self.__consume_current_token()
 
@@ -108,16 +115,19 @@ class CompilationEngine:
     #
 
 
-    def compile_subroutine_body(self):       
+    def compile_subroutine_body(self, function_name):       
         self.__consume_expected_symbol("{")
-        self.compile_var_dec()
+       
+        num_vars = self.compile_var_dec()
+        self._vm_writer.write_function(f"{self._current_class_name}.{function_name}", num_vars)
         self.compile_statements()
         self.__consume_expected_symbol("}")
     #
 
 
     def compile_var_dec(self):
-
+        
+        num_vars = 0
         while self._tokenizer.token_type() == JackToken.KEYWORD and self._tokenizer.keyword() == JackToken.VAR:
 
             var_type = ""       
@@ -131,12 +141,12 @@ class CompilationEngine:
             
             var_name = self._tokenizer.current_token.value
             self._class_symbol_table.define(var_name, var_type, SymbolTable.VAR)
-    
             
             self.__consume_expected_token(JackToken.IDENTIFIER)
-            self.__compile_compound_var_decs()
+            num_vars = 1 + self.__compile_compound_var_decs()
             self.__consume_expected_symbol(";")
         #
+        return num_vars
     #
 
 
@@ -205,49 +215,67 @@ class CompilationEngine:
 
     def compile_do(self):
         self.__consume_current_token()
+
+        num_args = 0
+        function_name = self._tokenizer.identifier()
         self.__consume_expected_token(JackToken.IDENTIFIER)
         
         if self._tokenizer.token_type() == JackToken.SYMBOL:
             if self._tokenizer.symbol() == ".":
                 self.__consume_current_token()
+                
+                function_name += f".{self._tokenizer.identifier()}"
                 self.__consume_expected_token(JackToken.IDENTIFIER)
+                
                 self.__consume_expected_symbol("(")
-                self.compile_expression_list()
+                num_args += self.compile_expression_list()
                 self.__consume_expected_symbol(")")
             elif self._tokenizer.symbol() == "(":
                 self.__consume_current_token()
-                self.compile_expression_list()
+                num_args += self.compile_expression_list()
                 self.__consume_expected_symbol(")")
             else:
                 raise Exception("Unexpected token")
         else:
             raise Exception("Unexpected token")
         
+        self._vm_writer.write_call(function_name, num_args)
+        self._vm_writer.write_pop(VMWriter.TEMP, 0)
         self.__consume_expected_symbol(";")
     #
 
 
     def compile_return(self):
         self.__consume_current_token()
-        
+
+        has_return_val = False   
         if self._tokenizer.token_type() != JackToken.SYMBOL:
+            has_return_val = True
             self.compile_expression()
 
+        if not has_return_val:
+            self._vm_writer.write_push(VMWriter.CONSTANT, 0)
+        self._vm_writer.write_return()
+
         self.__consume_expected_symbol(";")
-    #s
+    #
 
 
     def compile_expression_list(self):
 
+        num_expressions = 0
         if self._tokenizer.token_type() == JackToken.SYMBOL and self._tokenizer.symbol() == ")":
             pass
         else:
             self.compile_expression()
+            num_expressions = 1
             while self._tokenizer.token_type() == JackToken.SYMBOL and self._tokenizer.symbol() == ",":
                 self.__consume_current_token()
                 self.compile_expression()
+                num_expressions += 1
             #
         #
+        return num_expressions
     #
             
 
@@ -257,7 +285,17 @@ class CompilationEngine:
 
         if self._tokenizer.token_type() == JackToken.SYMBOL:
             current_symbol = self._tokenizer.symbol()
-            if (current_symbol == "+" or current_symbol == "-" or current_symbol == '*' or
+            if current_symbol == "+":
+                self.__consume_current_token()
+                self.compile_term()
+                self._vm_writer.write_arithmetic(VMWriter.ADD)
+            elif current_symbol == '*':
+                self.__consume_current_token()
+                self.compile_term()
+                self._vm_writer.write_call("Math.multiply", 2)
+ 
+            
+            elif (current_symbol == "-" or
                     current_symbol == "/" or current_symbol == "&amp;" or current_symbol == "|" or
                     current_symbol == "&lt;" or current_symbol == "&gt;" or current_symbol == "="):
                 self.__consume_current_token()
@@ -269,7 +307,10 @@ class CompilationEngine:
 
     def compile_term(self):
         token_type = self._tokenizer.token_type() 
-        if (token_type == JackToken.INT_CONST or token_type == JackToken.STRING_CONST or 
+        if token_type == JackToken.INT_CONST:
+            self._vm_writer.write_push(VMWriter.CONSTANT, self._tokenizer.int_val())
+            self.__consume_current_token()
+        if (token_type == JackToken.STRING_CONST or 
                 (token_type == JackToken.KEYWORD and
                     (self._tokenizer.keyword() == JackToken.TRUE or self._tokenizer.keyword() == JackToken.FALSE or
                      self._tokenizer.keyword() == JackToken.NULL or self._tokenizer.keyword() == JackToken.THIS))):
@@ -321,16 +362,20 @@ class CompilationEngine:
 
 
     def __compile_compound_var_decs(self, symbol_table, current_type, current_kind):
+        num_vars = 0
         while self._tokenizer.token_type() == JackToken.SYMBOL and self._tokenizer.symbol() == ",":
             self.__consume_current_token()
 
             symbol_table.define(self._tokenizer.current_token.value, current_type, current_kind)
+            num_vars += 1
             self.__consume_expected_token(JackToken.IDENTIFIER)
         #
+        return num_vars
     #
 
 
     def __compile_compound_param_list(self):
+
         while self._tokenizer.token_type() == JackToken.SYMBOL and self._tokenizer.symbol() == ",":
             self.__consume_current_token()
 
@@ -342,6 +387,7 @@ class CompilationEngine:
                 raise Exception("Unexpected token")
             
             self._subroutine_symbol_table.define(self._tokenizer.current_token.value, var_type, SymbolTable.ARG)
+            
             self.__consume_expected_token(JackToken.IDENTIFIER)
         #
     #

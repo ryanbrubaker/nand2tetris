@@ -22,7 +22,7 @@ else:
 
 for jack_file in files_to_process:
     input_file = open(jack_file)
-    output_file = open(jack_file.replace(".jack", ".xml"), "w")
+    output_file = open(jack_file.replace(".jack", ".vm"), "w")
 
     compilation_engine = CompilationEngine(input_file, output_file)
     compilation_engine.compile_class()
