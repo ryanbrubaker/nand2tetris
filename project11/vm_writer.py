@@ -23,9 +23,11 @@ class VMWriter:
 
 
     ADD = 0
+    EQ = 1
     
     OPERATOR_COMMANDS = {
-        ADD:    "add"
+        ADD:    "add",
+        EQ:     "eq"
     }
 
     def __init__(self, output_file):
@@ -45,14 +47,16 @@ class VMWriter:
         self._output_file.write(VMWriter.OPERATOR_COMMANDS[command] + "\n")
 
 
-    def write_label(self):
-        pass
+    def write_label(self, label):
+        self._output_file.write(f"label {label}\n")
+        
 
-    def write_goto(self):
-        pass
+    def write_goto(self, label):
+        self._output_file.write(f"goto {label}\n")
 
-    def write_if(self):
-        pass
+    def write_if(self, label):
+        self._output_file.write("not\n")
+        self._output_file.write(f"if-goto {label}\n")
 
     def write_call(self, function_name, num_args):
         self._output_file.write(f"call {function_name} {num_args}\n")

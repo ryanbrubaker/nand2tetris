@@ -19,6 +19,7 @@ class CompilationEngine:
         self._vm_writer = VMWriter(output_file)
 
         self._current_class_name = ""
+        self._file_label_num = 1
     #
 
 
@@ -187,18 +188,29 @@ class CompilationEngine:
     def compile_if(self):
         self.__consume_current_token()
         self.__consume_expected_symbol("(")
+        
         self.compile_expression()
+        else_label = self.__generate_next_label()
+        self._vm_writer.write_if(else_label)
+
         self.__consume_expected_symbol(")")
         self.__consume_expected_symbol("{")
+        
         self.compile_statements()
+        skip_else_label = self.__generate_next_label()
+        self._vm_writer.write_goto(skip_else_label)
+
         self.__consume_expected_symbol("}")
 
         if self._tokenizer.token_type() == JackToken.KEYWORD and self._tokenizer.keyword() == JackToken.ELSE:
+            self._vm_writer.write_label(else_label)
+    
             self.__consume_current_token()
             self.__consume_expected_symbol("{")
             self.compile_statements()
             self.__consume_expected_symbol("}")
         #
+        self._vm_writer.write_label(skip_else_label)
     #
 
 
@@ -293,6 +305,13 @@ class CompilationEngine:
                 self.__consume_current_token()
                 self.compile_term()
                 self._vm_writer.write_call("Math.multiply", 2)
+            elif current_symbol == "=":
+                self.__consume_current_token()
+                self.compile_term()
+                self._vm_writer.write_arithmetic(VMWriter.EQ)
+            #
+
+
  
             
             elif (current_symbol == "-" or
@@ -434,6 +453,11 @@ class CompilationEngine:
             self.__get_next_token()
         #
     #
-#
+
+
+    def __generate_next_label(self):
+        label = f"{self._current_class_name}.LABEL.{self._file_label_num}"
+        self._file_label_num += 1
+        return label
 
         
