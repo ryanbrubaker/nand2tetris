@@ -30,7 +30,7 @@ class SymbolTable:
 
     ## Assumes no duplicate declarations
     def define(self, name, type, kind):
-        #print(f"adding {name} at index {self._counts[kind]}\n")
+        print(f"adding {name} at index {self._counts[kind]}\n")
         self._table[name] = (type, kind, self._counts[kind])
         self._counts[kind] += 1
     #

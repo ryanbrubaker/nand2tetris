@@ -121,11 +121,14 @@ class CompilationEngine:
     #
 
 
-    def compile_subroutine_body(self, function_name):       
+    def compile_subroutine_body(self, function_name):    
+        #print(self._local_symbol_table.to_string())
+   
         self.__consume_expected_symbol("{")
        
         num_vars = self.compile_var_dec()
         self._vm_writer.write_function(f"{self._current_class_name}.{function_name}", num_vars)
+        #print(self._local_symbol_table.to_string())
         self.compile_statements()
         self.__consume_expected_symbol("}")
     #
@@ -146,10 +149,12 @@ class CompilationEngine:
                 raise Exception("Unexpected token")
             
             var_name = self._tokenizer.current_token.value
-            self._class_symbol_table.define(var_name, var_type, SymbolTable.VAR)
+            self._local_symbol_table.define(var_name, var_type, SymbolTable.VAR)
+            #print(f"putting {var_name} into symbol table\n")
+            num_vars += 1
             
             self.__consume_expected_token(JackToken.IDENTIFIER)
-            num_vars = 1 + self.__compile_compound_var_decs(self._class_symbol_table, var_type, SymbolTable.VAR)
+            num_vars += self.__compile_compound_var_decs(self._local_symbol_table, var_type, SymbolTable.VAR)
             self.__consume_expected_symbol(";")
         #
         return num_vars
@@ -191,7 +196,6 @@ class CompilationEngine:
         self.compile_expression()
 
         var_info = self.__find_symbol(var_name)
-        print("popping return from let function")
         self._vm_writer.write_pop(var_info[0], var_info[1])
 
         self.__consume_expected_symbol(";")
@@ -323,14 +327,23 @@ class CompilationEngine:
 
         if self._tokenizer.token_type() == JackToken.SYMBOL:
             current_symbol = self._tokenizer.symbol()
+            
             if current_symbol == "+":
                 self.__consume_current_token()
                 self.compile_term()
                 self._vm_writer.write_arithmetic(VMWriter.ADD)
+            elif current_symbol == "-":
+                self.__consume_current_token()
+                self.compile_term()
+                self._vm_writer.write_arithmetic(VMWriter.SUB)
             elif current_symbol == '*':
                 self.__consume_current_token()
                 self.compile_term()
                 self._vm_writer.write_call("Math.multiply", 2)
+            elif current_symbol == '/':
+                self.__consume_current_token()
+                self.compile_term()
+                self._vm_writer.write_call("Math.divide", 2)
             elif current_symbol == "=":
                 self.__consume_current_token()
                 self.compile_term()
@@ -339,19 +352,18 @@ class CompilationEngine:
                 self.__consume_current_token()
                 self.compile_term()
                 self._vm_writer.write_arithmetic(VMWriter.GT)
-            elif current_symbol == "-":
+            elif current_symbol == "<":
                 self.__consume_current_token()
                 self.compile_term()
-                self._vm_writer.write_arithmetic(VMWriter.SUB)
-            #
-
-
- 
-            
-            elif (current_symbol == "/" or current_symbol == "&amp;" or current_symbol == "|" or
-                    current_symbol == "&lt;" or current_symbol == "&gt;" or current_symbol == "="):
+                self._vm_writer.write_arithmetic(VMWriter.LT)
+            elif current_symbol == "&":
                 self.__consume_current_token()
                 self.compile_term()
+                self._vm_writer.write_arithmetic(VMWriter.AND)
+            elif current_symbol == "|":
+                self.__consume_current_token()
+                self.compile_term()
+                self._vm_writer.write_arithmetic(VMWriter.OR)
             #
         #
     #
@@ -362,11 +374,22 @@ class CompilationEngine:
         if token_type == JackToken.INT_CONST:
             self._vm_writer.write_push(SEGMENTS.CONSTANT, self._tokenizer.int_val())
             self.__consume_current_token()
+        #
+        elif token_type == JackToken.KEYWORD and self._tokenizer.keyword() == JackToken.TRUE:
+            self._vm_writer.write_push(SEGMENTS.CONSTANT, 1)
+            self._vm_writer.write_arithmetic(VMWriter.NEG)
+            self.__consume_current_token()
+        #
+        elif token_type == JackToken.KEYWORD and self._tokenizer.keyword() == JackToken.FALSE:
+            self._vm_writer.write_push(SEGMENTS.CONSTANT, 0)
+            self.__consume_current_token()
+        #
         elif (token_type == JackToken.STRING_CONST or 
                 (token_type == JackToken.KEYWORD and
-                    (self._tokenizer.keyword() == JackToken.TRUE or self._tokenizer.keyword() == JackToken.FALSE or
+                    (self._tokenizer.keyword() == JackToken.FALSE or
                      self._tokenizer.keyword() == JackToken.NULL or self._tokenizer.keyword() == JackToken.THIS))):
             self.__consume_current_token()
+        #
         elif token_type == JackToken.IDENTIFIER:
             identifier = self._tokenizer.identifier()
             self.__consume_current_token()
