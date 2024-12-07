@@ -54,15 +54,6 @@ class JackToken:
                 self._type = JackToken.KEYWORD
             #
         #
-
-        if self._value == "&":
-            self._value = "&amp;"
-        elif self._value == "<":
-            self._value = "&lt;"
-        elif self._value == ">":
-            self._value = "&gt;"
-        elif self._value == '"':
-            self._value = "&quot;"
     #
 
     @property

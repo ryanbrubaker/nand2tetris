@@ -1,33 +1,40 @@
-
+import segments as SEGMENTS
 class VMWriter:
 
-    CONSTANT = 0
-    ARGUMENT = 1
-    LOCAL = 2
-    STATIC = 3
-    THIS = 4
-    THAT = 5
-    POINTER = 6
-    TEMP = 7
 
     SEGMENT_MAP = {
-        CONSTANT:   "constant",
-        ARGUMENT:   "argument",
-        LOCAL:      "static",
-        STATIC:     "static",
-        THIS:       "this",
-        THAT:       "that",
-        POINTER:    "pointer",
-        TEMP:       "temp"
+        SEGMENTS.CONSTANT:   "constant",
+        SEGMENTS.ARGUMENT:   "argument",
+        SEGMENTS.LOCAL:      "local",
+        SEGMENTS.STATIC:     "static",
+        SEGMENTS.THIS:       "this",
+        SEGMENTS.THAT:       "that",
+        SEGMENTS.POINTER:    "pointer",
+        SEGMENTS.TEMP:       "temp"
     }
 
 
     ADD = 0
-    EQ = 1
-    
+    SUB = 1
+    EQ = 2
+    GT = 3
+    LT = 4
+    AND = 5
+    OR = 6
+    NEG = 7
+    NOT = 8
+
+
     OPERATOR_COMMANDS = {
         ADD:    "add",
-        EQ:     "eq"
+        SUB:    "sub",
+        EQ:     "eq",
+        GT:     "gt",
+        LT:     "lt",
+        AND:    "and",
+        OR:     "or",
+        NEG:    "neg",
+        NOT:    "not",
     }
 
     def __init__(self, output_file):

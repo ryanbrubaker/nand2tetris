@@ -1,4 +1,6 @@
 
+import segments as SEGMENTS
+
 from jack_token import JackToken
 from jack_tokenizer import JackTokenizer
 from symbol_table import SymbolTable
@@ -15,7 +17,7 @@ class CompilationEngine:
 
         self._tokenizer = JackTokenizer(input_file)
         self._class_symbol_table = SymbolTable()
-        self._subroutine_symbol_table = SymbolTable()
+        self._local_symbol_table = SymbolTable()
         self._vm_writer = VMWriter(output_file)
 
         self._current_class_name = ""
@@ -79,9 +81,12 @@ class CompilationEngine:
                     (self._tokenizer.keyword() == JackToken.CONSTRUCTOR or self._tokenizer.keyword() == JackToken.FUNCTION or
                         self._tokenizer.keyword() == JackToken.METHOD)):
             
-            self._subroutine_symbol_table.define("this", self._current_class_name, SymbolTable.ARG)
-            self.__consume_current_token()
-            
+            self._local_symbol_table.reset()
+
+            if self._tokenizer.keyword() == JackToken.METHOD:
+                self._local_symbol_table.define("this", self._current_class_name, SymbolTable.ARG)
+
+            self.__consume_current_token() 
             if (self.__is_language_type() or 
                     (self._tokenizer.token_type() == JackToken.KEYWORD and self._tokenizer.keyword() == JackToken.VOID)):
                 self.__consume_current_token()
@@ -110,7 +115,7 @@ class CompilationEngine:
             var_name = self._tokenizer.current_token.value
             self.__consume_expected_token(JackToken.IDENTIFIER)
 
-            self._subroutine_symbol_table.define(var_name, var_type, SymbolTable.ARG)
+            self._local_symbol_table.define(var_name, var_type, SymbolTable.ARG)
             self.__compile_compound_param_list()
         #
     #
@@ -144,7 +149,7 @@ class CompilationEngine:
             self._class_symbol_table.define(var_name, var_type, SymbolTable.VAR)
             
             self.__consume_expected_token(JackToken.IDENTIFIER)
-            num_vars = 1 + self.__compile_compound_var_decs()
+            num_vars = 1 + self.__compile_compound_var_decs(self._class_symbol_table, var_type, SymbolTable.VAR)
             self.__consume_expected_symbol(";")
         #
         return num_vars
@@ -172,6 +177,8 @@ class CompilationEngine:
 
     def compile_let(self):
         self.__consume_current_token()
+
+        var_name = self._tokenizer.identifier()
         self.__consume_expected_token(JackToken.IDENTIFIER)
 
         if self._tokenizer.token_type() == JackToken.SYMBOL and self._tokenizer.symbol() == "[":
@@ -182,6 +189,11 @@ class CompilationEngine:
 
         self.__consume_expected_symbol("=")
         self.compile_expression()
+
+        var_info = self.__find_symbol(var_name)
+        print("popping return from let function")
+        self._vm_writer.write_pop(var_info[0], var_info[1])
+
         self.__consume_expected_symbol(";")
     #
 
@@ -215,13 +227,27 @@ class CompilationEngine:
 
 
     def compile_while(self):
+        #print(self._local_symbol_table.to_string())
+        while_label = self.__generate_next_label()
+        self._vm_writer.write_label(while_label)
+
         self.__consume_current_token()
         self.__consume_expected_symbol("(")
+
         self.compile_expression()
+
+        end_while_label = self.__generate_next_label()
+        self._vm_writer.write_if(end_while_label)
+
         self.__consume_expected_symbol(")")
         self.__consume_expected_symbol("{")
+        
         self.compile_statements()
+        self._vm_writer.write_goto(while_label)
+
         self.__consume_expected_symbol("}")
+
+        self._vm_writer.write_label(end_while_label)
     #
 
 
@@ -252,7 +278,7 @@ class CompilationEngine:
             raise Exception("Unexpected token")
         
         self._vm_writer.write_call(function_name, num_args)
-        self._vm_writer.write_pop(VMWriter.TEMP, 0)
+        self._vm_writer.write_pop(SEGMENTS.TEMP, 0)
         self.__consume_expected_symbol(";")
     #
 
@@ -266,7 +292,7 @@ class CompilationEngine:
             self.compile_expression()
 
         if not has_return_val:
-            self._vm_writer.write_push(VMWriter.CONSTANT, 0)
+            self._vm_writer.write_push(SEGMENTS.CONSTANT, 0)
         self._vm_writer.write_return()
 
         self.__consume_expected_symbol(";")
@@ -309,13 +335,20 @@ class CompilationEngine:
                 self.__consume_current_token()
                 self.compile_term()
                 self._vm_writer.write_arithmetic(VMWriter.EQ)
+            elif current_symbol == ">":
+                self.__consume_current_token()
+                self.compile_term()
+                self._vm_writer.write_arithmetic(VMWriter.GT)
+            elif current_symbol == "-":
+                self.__consume_current_token()
+                self.compile_term()
+                self._vm_writer.write_arithmetic(VMWriter.SUB)
             #
 
 
  
             
-            elif (current_symbol == "-" or
-                    current_symbol == "/" or current_symbol == "&amp;" or current_symbol == "|" or
+            elif (current_symbol == "/" or current_symbol == "&amp;" or current_symbol == "|" or
                     current_symbol == "&lt;" or current_symbol == "&gt;" or current_symbol == "="):
                 self.__consume_current_token()
                 self.compile_term()
@@ -327,31 +360,41 @@ class CompilationEngine:
     def compile_term(self):
         token_type = self._tokenizer.token_type() 
         if token_type == JackToken.INT_CONST:
-            self._vm_writer.write_push(VMWriter.CONSTANT, self._tokenizer.int_val())
+            self._vm_writer.write_push(SEGMENTS.CONSTANT, self._tokenizer.int_val())
             self.__consume_current_token()
-        if (token_type == JackToken.STRING_CONST or 
+        elif (token_type == JackToken.STRING_CONST or 
                 (token_type == JackToken.KEYWORD and
                     (self._tokenizer.keyword() == JackToken.TRUE or self._tokenizer.keyword() == JackToken.FALSE or
                      self._tokenizer.keyword() == JackToken.NULL or self._tokenizer.keyword() == JackToken.THIS))):
             self.__consume_current_token()
         elif token_type == JackToken.IDENTIFIER:
+            identifier = self._tokenizer.identifier()
             self.__consume_current_token()
             if self._tokenizer.token_type() == JackToken.SYMBOL and self._tokenizer.symbol() == ".":
                 self.__consume_current_token()
+                
+                function_name = f"{identifier}.{self._tokenizer.identifier()}"
                 self.__consume_expected_token(JackToken.IDENTIFIER)
+
                 self.__consume_expected_symbol("(")
-                self.compile_expression_list()
+                num_args = self.compile_expression_list()
                 self.__consume_expected_symbol(")")
+                self._vm_writer.write_call(function_name, num_args)
+            #
             elif self._tokenizer.token_type() == JackToken.SYMBOL and self._tokenizer.symbol() == "(":
                 self.__consume_current_token()
-                self.compile_expression_list()                
+                num_args = self.compile_expression_list()                
                 self.__consume_expected_symbol(")")
+                self._vm_writer.write_call(function_name, num_args)
+            #
             elif self._tokenizer.token_type() == JackToken.SYMBOL and self._tokenizer.symbol() == "[":
                 self.__consume_current_token()
                 self.compile_expression()
                 self.__consume_expected_symbol("]")
             else:
-                pass
+                var_info = self.__find_symbol(identifier)
+                #print(f"var info for {identifier}: kind_of = {var_info[0]}, position = {var_info[1]}\n")
+                self._vm_writer.write_push(var_info[0], var_info[1])
             #
         #
         elif token_type == JackToken.SYMBOL and self._tokenizer.symbol() == "(":
@@ -364,9 +407,15 @@ class CompilationEngine:
                 self.__consume_expected_symbol(")")
             #
         #
-        elif token_type == JackToken.SYMBOL and (self._tokenizer.symbol() == "-" or self._tokenizer.symbol() == "~"):
+        elif token_type == JackToken.SYMBOL and self._tokenizer.symbol() == "~":
             self.__consume_current_token()
             self.compile_term()
+            self._vm_writer.write_arithmetic(VMWriter.NOT)
+        #
+        elif token_type == JackToken.SYMBOL and self._tokenizer.symbol() == "-":
+            self.__consume_current_token()
+            self.compile_term()
+            self._vm_writer.write_arithmetic(VMWriter.NEG)
         #
     #
 
@@ -405,7 +454,7 @@ class CompilationEngine:
             else:
                 raise Exception("Unexpected token")
             
-            self._subroutine_symbol_table.define(self._tokenizer.current_token.value, var_type, SymbolTable.ARG)
+            self._local_symbol_table.define(self._tokenizer.current_token.value, var_type, SymbolTable.ARG)
             
             self.__consume_expected_token(JackToken.IDENTIFIER)
         #
@@ -419,6 +468,7 @@ class CompilationEngine:
         if self._tokenizer.has_more_tokens():
             self._tokenizer.advance()
         #
+        #print(self._tokenizer.current_token.value)
     #
         
 
@@ -455,9 +505,22 @@ class CompilationEngine:
     #
 
 
+    ## Generate a unique label using the class name and counter
     def __generate_next_label(self):
         label = f"{self._current_class_name}.LABEL.{self._file_label_num}"
         self._file_label_num += 1
         return label
+    
+
+    # Find the given symbol in the two symbol tables
+    def __find_symbol(self, var_name):
+        if self._local_symbol_table.contains(var_name):
+            return self._local_symbol_table.kindOf(var_name), self._local_symbol_table.indexOf(var_name)
+        elif self._class_symbol_table.contains(var_name):
+            return self._class_symbol_table.kindOf(var_name), self._class_symbol_table.indexOf(var_name)
+        else:
+            raise Exception("Undefined variable")
+    
+
 
         

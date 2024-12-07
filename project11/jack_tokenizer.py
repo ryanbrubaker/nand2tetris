@@ -59,16 +59,7 @@ class JackTokenizer:
         return JackToken.KEYWORDS[self._current_token_str]
 
     def symbol(self):
-        if self._current_token_str == "&":
-            return "&amp;"
-        elif self._current_token_str == "<":
-            return "&lt;"
-        elif self._current_token_str == ">":
-            return "&gt;"
-        elif self._current_token_str == '"':
-            return "&quot;"
-        else:
-            return self._current_token_str
+        return self._current_token_str
 
     def identifier(self):
         return self._current_token_str
