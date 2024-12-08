@@ -277,18 +277,13 @@ class CompilationEngine:
             if self._tokenizer.symbol() == ".":
                 self.__consume_current_token()
                 
-                if self._local_symbol_table.must_pass_this(function_name):
-                    num_args += 1
-                    self._vm_writer.write_push(self._local_symbol_table.kind_of(function_name),
-                                               self._local_symbol_table.index_of(function_name))
-                    function_name = self._local_symbol_table.type_of(function_name)
-                #
-                elif self._class_symbol_table.must_pass_this(function_name):
-                    num_args += 1
-                    self._vm_writer.write_push(self._class_symbol_table.kind_of(function_name),
-                                               self._class_symbol_table.index_of(function_name))
-
-                    function_name = self._class_symbol_table.type_of(function_name)
+                if self._local_symbol_table.must_pass_this(function_name) or self._class_symbol_table.must_pass_this(function_name):
+                    var_info = self.__find_symbol(function_name)
+                    if None != var_info:
+                        num_args += 1
+                        self._vm_writer.write_push(var_info[0], var_info[1])
+                        function_name = var_info[2]
+                    #
                 #
 
                 function_name += f".{self._tokenizer.identifier()}"
@@ -432,17 +427,13 @@ class CompilationEngine:
             if self._tokenizer.token_type() == JackToken.SYMBOL and self._tokenizer.symbol() == ".":
                 self.__consume_current_token()
 
-                if self._local_symbol_table.must_pass_this(identifier):
-                    num_args += 1
-                    self._vm_writer.write_push(self._local_symbol_table.kind_of(identifier),
-                                               self._local_symbol_table.index_of(identifier))
-                    function_name = self._local_symbol_table.type_of(identifier)
-                #
-                elif self._class_symbol_table.must_pass_this(identifier):
-                    num_args += 1
-                    self._vm_writer.write_push(self._class_symbol_table.kind_of(identifier),
-                                               self._class_symbol_table.index_of(identifier))
-                    function_name = self._local_symbol_table.type_of(identifier)
+                if self._local_symbol_table.must_pass_this(identifier) or self._class_symbol_table.must_pass_this(identifier):
+                    var_info = self.__find_symbol(identifier)
+                    if None != var_info:
+                        num_args += 1
+                        self._vm_writer.write_push(var_info[0], var_info[1])
+                        function_name = var_info[2]
+                    #
                 #
                 
                 function_name = f"{identifier}.{self._tokenizer.identifier()}"
@@ -589,11 +580,18 @@ class CompilationEngine:
     # Find the given symbol in the two symbol tables
     def __find_symbol(self, var_name):
         if self._local_symbol_table.contains(var_name):
-            return self._local_symbol_table.kind_of(var_name), self._local_symbol_table.index_of(var_name)
+            return (self._local_symbol_table.kind_of(var_name), self._local_symbol_table.index_of(var_name),
+                        self._local_symbol_table.type_of(var_name))
+        #
         elif self._class_symbol_table.contains(var_name):
-            return self._class_symbol_table.kind_of(var_name), self._class_symbol_table.index_of(var_name)
+            return (self._class_symbol_table.kind_of(var_name), self._class_symbol_table.index_of(var_name),
+                        self._class_symbol_table.type_of(var_name))
+        #
         else:
-            raise Exception("Undefined variable")
+            return None
+        #
+    #
+#
     
 
 
