@@ -21,7 +21,7 @@ class SquareGame {
    constructor SquareGame new() {
       // The initial square is located in (0,0), has size 30, and is not moving.
       let square = Square.new(0, 0, 30);
-      let direction = 0;
+      let direction = 22;
       return this;
    }
 

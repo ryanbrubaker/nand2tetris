@@ -30,26 +30,34 @@ class SymbolTable:
 
     ## Assumes no duplicate declarations
     def define(self, name, type, kind):
-        print(f"adding {name} at index {self._counts[kind]}\n")
+        #print(f"adding {name} at index {self._counts[kind]}\n")
         self._table[name] = (type, kind, self._counts[kind])
         self._counts[kind] += 1
+        #print(self.to_string())
     #
 
     def contains(self, var_name):
         return var_name in self._table
+    
+    def must_pass_this(self, var_name):
+        return self.contains(var_name) and self.kind_of(var_name) != SymbolTable.STATIC
+
 
     def var_count(self, kind):
         return self._counts[kind]
     #
 
-    def kindOf(self, name):
+    def kind_of(self, name):
         return self._table[name][1]
     #
 
-    def typeOf(self, name):
+    def type_of(self, name):
         return self._table[name][0]
     #
 
-    def indexOf(self, name):
+    def index_of(self, name):
         return self._table[name][2]
     #
+
+    def get_object_space_alloc(self):
+        return self._counts[SymbolTable.FIELD]

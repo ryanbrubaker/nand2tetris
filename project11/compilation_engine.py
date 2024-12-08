@@ -83,7 +83,11 @@ class CompilationEngine:
             
             self._local_symbol_table.reset()
 
+            is_method = False
+            is_constructor = self._tokenizer.keyword() == JackToken.CONSTRUCTOR
+
             if self._tokenizer.keyword() == JackToken.METHOD:
+                is_method = True
                 self._local_symbol_table.define("this", self._current_class_name, SymbolTable.ARG)
 
             self.__consume_current_token() 
@@ -100,7 +104,7 @@ class CompilationEngine:
             self.compile_parameter_list()
             self.__consume_expected_symbol(")")
 
-            self.compile_subroutine_body(function_name)
+            self.compile_subroutine_body(function_name, is_constructor, is_method)
         #
     #
 
@@ -121,14 +125,23 @@ class CompilationEngine:
     #
 
 
-    def compile_subroutine_body(self, function_name):    
+    def compile_subroutine_body(self, function_name, is_constructor, is_method):    
         #print(self._local_symbol_table.to_string())
    
         self.__consume_expected_symbol("{")
        
         num_vars = self.compile_var_dec()
         self._vm_writer.write_function(f"{self._current_class_name}.{function_name}", num_vars)
-        #print(self._local_symbol_table.to_string())
+
+        if is_method:
+            self._vm_writer.write_push(SEGMENTS.ARGUMENT, 0)
+            self._vm_writer.write_pop(SEGMENTS.POINTER, 0)
+
+        if is_constructor:
+            self._vm_writer.write_push(SEGMENTS.CONSTANT, self._class_symbol_table.get_object_space_alloc())
+            self._vm_writer.write_call("Memory.alloc", 1)
+            self._vm_writer.write_pop(SEGMENTS.POINTER, 0)
+
         self.compile_statements()
         self.__consume_expected_symbol("}")
     #
@@ -218,9 +231,8 @@ class CompilationEngine:
 
         self.__consume_expected_symbol("}")
 
-        if self._tokenizer.token_type() == JackToken.KEYWORD and self._tokenizer.keyword() == JackToken.ELSE:
-            self._vm_writer.write_label(else_label)
-    
+        self._vm_writer.write_label(else_label)
+        if self._tokenizer.token_type() == JackToken.KEYWORD and self._tokenizer.keyword() == JackToken.ELSE:    
             self.__consume_current_token()
             self.__consume_expected_symbol("{")
             self.compile_statements()
@@ -231,7 +243,6 @@ class CompilationEngine:
 
 
     def compile_while(self):
-        #print(self._local_symbol_table.to_string())
         while_label = self.__generate_next_label()
         self._vm_writer.write_label(while_label)
 
@@ -266,14 +277,32 @@ class CompilationEngine:
             if self._tokenizer.symbol() == ".":
                 self.__consume_current_token()
                 
+                if self._local_symbol_table.must_pass_this(function_name):
+                    num_args += 1
+                    self._vm_writer.write_push(self._local_symbol_table.kind_of(function_name),
+                                               self._local_symbol_table.index_of(function_name))
+                    function_name = self._local_symbol_table.type_of(function_name)
+                #
+                elif self._class_symbol_table.must_pass_this(function_name):
+                    num_args += 1
+                    self._vm_writer.write_push(self._class_symbol_table.kind_of(function_name),
+                                               self._class_symbol_table.index_of(function_name))
+
+                    function_name = self._class_symbol_table.type_of(function_name)
+                #
+
                 function_name += f".{self._tokenizer.identifier()}"
                 self.__consume_expected_token(JackToken.IDENTIFIER)
                 
                 self.__consume_expected_symbol("(")
                 num_args += self.compile_expression_list()
                 self.__consume_expected_symbol(")")
+            #
             elif self._tokenizer.symbol() == "(":
+                function_name = f"{self._current_class_name}.{function_name}"
                 self.__consume_current_token()
+                num_args += 1
+                self._vm_writer.write_push(SEGMENTS.POINTER, 0)
                 num_args += self.compile_expression_list()
                 self.__consume_expected_symbol(")")
             else:
@@ -297,8 +326,8 @@ class CompilationEngine:
 
         if not has_return_val:
             self._vm_writer.write_push(SEGMENTS.CONSTANT, 0)
+        
         self._vm_writer.write_return()
-
         self.__consume_expected_symbol(";")
     #
 
@@ -384,17 +413,37 @@ class CompilationEngine:
             self._vm_writer.write_push(SEGMENTS.CONSTANT, 0)
             self.__consume_current_token()
         #
-        elif (token_type == JackToken.STRING_CONST or 
-                (token_type == JackToken.KEYWORD and
-                    (self._tokenizer.keyword() == JackToken.FALSE or
-                     self._tokenizer.keyword() == JackToken.NULL or self._tokenizer.keyword() == JackToken.THIS))):
+        elif token_type == JackToken.KEYWORD and self._tokenizer.keyword() == JackToken.THIS:
+            self._vm_writer.write_push(SEGMENTS.POINTER, 0)
+            self.__consume_current_token()
+        #
+        elif token_type == JackToken.KEYWORD and self._tokenizer.keyword() == JackToken.NULL:
+            self._vm_writer.write_push(SEGMENTS.CONSTANT, 0)
+            self.__consume_current_token()
+        #
+        elif token_type == JackToken.STRING_CONST:
             self.__consume_current_token()
         #
         elif token_type == JackToken.IDENTIFIER:
             identifier = self._tokenizer.identifier()
             self.__consume_current_token()
+            num_args = 0
+
             if self._tokenizer.token_type() == JackToken.SYMBOL and self._tokenizer.symbol() == ".":
                 self.__consume_current_token()
+
+                if self._local_symbol_table.must_pass_this(identifier):
+                    num_args += 1
+                    self._vm_writer.write_push(self._local_symbol_table.kind_of(identifier),
+                                               self._local_symbol_table.index_of(identifier))
+                    function_name = self._local_symbol_table.type_of(identifier)
+                #
+                elif self._class_symbol_table.must_pass_this(identifier):
+                    num_args += 1
+                    self._vm_writer.write_push(self._class_symbol_table.kind_of(identifier),
+                                               self._class_symbol_table.index_of(identifier))
+                    function_name = self._local_symbol_table.type_of(identifier)
+                #
                 
                 function_name = f"{identifier}.{self._tokenizer.identifier()}"
                 self.__consume_expected_token(JackToken.IDENTIFIER)
@@ -406,6 +455,8 @@ class CompilationEngine:
             #
             elif self._tokenizer.token_type() == JackToken.SYMBOL and self._tokenizer.symbol() == "(":
                 self.__consume_current_token()
+                num_args += 1
+                self._vm_writer.write_push(SEGMENTS.POINTER, 0)
                 num_args = self.compile_expression_list()                
                 self.__consume_expected_symbol(")")
                 self._vm_writer.write_call(function_name, num_args)
@@ -538,9 +589,9 @@ class CompilationEngine:
     # Find the given symbol in the two symbol tables
     def __find_symbol(self, var_name):
         if self._local_symbol_table.contains(var_name):
-            return self._local_symbol_table.kindOf(var_name), self._local_symbol_table.indexOf(var_name)
+            return self._local_symbol_table.kind_of(var_name), self._local_symbol_table.index_of(var_name)
         elif self._class_symbol_table.contains(var_name):
-            return self._class_symbol_table.kindOf(var_name), self._class_symbol_table.indexOf(var_name)
+            return self._class_symbol_table.kind_of(var_name), self._class_symbol_table.index_of(var_name)
         else:
             raise Exception("Undefined variable")
     
