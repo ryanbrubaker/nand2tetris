@@ -442,6 +442,7 @@ class CompilationEngine:
         #
         elif token_type == JackToken.IDENTIFIER:
             identifier = self._tokenizer.identifier()
+            function_name = identifier
             var_info = self.__find_symbol(identifier)
 
             self.__consume_current_token()
@@ -459,11 +460,11 @@ class CompilationEngine:
                     #
                 #
                 
-                function_name = f"{identifier}.{self._tokenizer.identifier()}"
+                function_name = f"{function_name}.{self._tokenizer.identifier()}"
                 self.__consume_expected_token(JackToken.IDENTIFIER)
 
                 self.__consume_expected_symbol("(")
-                num_args = self.compile_expression_list()
+                num_args += self.compile_expression_list()
                 self.__consume_expected_symbol(")")
                 self._vm_writer.write_call(function_name, num_args)
             #
@@ -471,7 +472,7 @@ class CompilationEngine:
                 self.__consume_current_token()
                 num_args += 1
                 self._vm_writer.write_push(SEGMENTS.POINTER, 0)
-                num_args = self.compile_expression_list()                
+                num_args += self.compile_expression_list()                
                 self.__consume_expected_symbol(")")
                 self._vm_writer.write_call(function_name, num_args)
             #
