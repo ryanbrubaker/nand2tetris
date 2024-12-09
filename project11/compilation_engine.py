@@ -197,19 +197,32 @@ class CompilationEngine:
         self.__consume_current_token()
 
         var_name = self._tokenizer.identifier()
+        var_info = self.__find_symbol(var_name)
         self.__consume_expected_token(JackToken.IDENTIFIER)
 
+        is_array_assignment = False
         if self._tokenizer.token_type() == JackToken.SYMBOL and self._tokenizer.symbol() == "[":
+            is_array_assignment = True
+            self._vm_writer.write_push(var_info[0], var_info[1])
+
             self.__consume_current_token()
             self.compile_expression()
             self.__consume_expected_symbol("]")
+
+            self._vm_writer.write_arithmetic(VMWriter.ADD)
         #
 
         self.__consume_expected_symbol("=")
         self.compile_expression()
 
-        var_info = self.__find_symbol(var_name)
-        self._vm_writer.write_pop(var_info[0], var_info[1])
+
+        if is_array_assignment:
+            self._vm_writer.write_pop(SEGMENTS.TEMP, 0)
+            self._vm_writer.write_pop(SEGMENTS.POINTER, 1)
+            self._vm_writer.write_push(SEGMENTS.TEMP, 0)
+            self._vm_writer.write_pop(SEGMENTS.THAT, 0)
+        else:
+            self._vm_writer.write_pop(var_info[0], var_info[1])
 
         self.__consume_expected_symbol(";")
     #
@@ -417,10 +430,20 @@ class CompilationEngine:
             self.__consume_current_token()
         #
         elif token_type == JackToken.STRING_CONST:
+            string_const = self._tokenizer.current_token.value
+            string_length = len(string_const)
+
+            self._vm_writer.write_push(SEGMENTS.CONSTANT, string_length)
+            self._vm_writer.write_call("String.new", 1)
+            for c in string_const:
+                self._vm_writer.write_push(SEGMENTS.CONSTANT, ord(c))
+                self._vm_writer.write_call("String.appendChar", 2)
             self.__consume_current_token()
         #
         elif token_type == JackToken.IDENTIFIER:
             identifier = self._tokenizer.identifier()
+            var_info = self.__find_symbol(identifier)
+
             self.__consume_current_token()
             num_args = 0
 
@@ -453,9 +476,15 @@ class CompilationEngine:
                 self._vm_writer.write_call(function_name, num_args)
             #
             elif self._tokenizer.token_type() == JackToken.SYMBOL and self._tokenizer.symbol() == "[":
+                self._vm_writer.write_push(var_info[0], var_info[1])
+
                 self.__consume_current_token()
                 self.compile_expression()
                 self.__consume_expected_symbol("]")
+
+                self._vm_writer.write_arithmetic(VMWriter.ADD)
+                self._vm_writer.write_pop(SEGMENTS.POINTER, 1)
+                self._vm_writer.write_push(SEGMENTS.THAT, 0)
             else:
                 var_info = self.__find_symbol(identifier)
                 #print(f"var info for {identifier}: kind_of = {var_info[0]}, position = {var_info[1]}\n")
