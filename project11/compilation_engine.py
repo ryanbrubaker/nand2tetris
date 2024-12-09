@@ -126,7 +126,6 @@ class CompilationEngine:
 
 
     def compile_subroutine_body(self, function_name, is_constructor, is_method):    
-        #print(self._local_symbol_table.to_string())
    
         self.__consume_expected_symbol("{")
        
@@ -163,7 +162,6 @@ class CompilationEngine:
             
             var_name = self._tokenizer.current_token.value
             self._local_symbol_table.define(var_name, var_type, SymbolTable.VAR)
-            #print(f"putting {var_name} into symbol table\n")
             num_vars += 1
             
             self.__consume_expected_token(JackToken.IDENTIFIER)
@@ -488,7 +486,6 @@ class CompilationEngine:
                 self._vm_writer.write_push(SEGMENTS.THAT, 0)
             else:
                 var_info = self.__find_symbol(identifier)
-                #print(f"var info for {identifier}: kind_of = {var_info[0]}, position = {var_info[1]}\n")
                 self._vm_writer.write_push(var_info[0], var_info[1])
             #
         #
@@ -563,7 +560,6 @@ class CompilationEngine:
         if self._tokenizer.has_more_tokens():
             self._tokenizer.advance()
         #
-        #print(self._tokenizer.current_token.value)
     #
         
 
