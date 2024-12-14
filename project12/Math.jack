@@ -14,60 +14,167 @@ class Math {
     static Array powersOfTwo; // Stores 2^0, 2^1, 2^2,..., 2^(n-1)
 
     // Initializes the Math library.
-    function void init() {
+    function void init() 
+    {
+        var int index;
+        var int temp;
+        var int pastValue;
+
+        let n = 16;
+
+        let powersOfTwo = Array.new(16);
+        let powersOfTwo[0] = 1;
+        let powersOfTwo[1] = 2;
+        let index = 2;
+        while (index < n)
+        {
+            let powersOfTwo[index] = powersOfTwo[index - 1] + powersOfTwo[index - 1];
+            let index = index + 1;
+        }
+        return;
     }
 
     /** Returns the product of x and y. 
      *  When a Jack compiler detects the multiplication operator '*'
      *  in an expression, it handles it by invoking this method. 
      *  Thus, in Jack, x * y and Math.multiply(x,y) return the same value. */
-    function int multiply(int x, int y) {
+    function int multiply(int x, int y) 
+    {
+        var int index;
+        var int sum;
+        var int shiftedX;
+
+        let index = 0;
+        let sum = 0;
+        let shiftedX = x;
+
+        while(index < n)
+        {
+            if (Math.bit(y, index) = true)
+            {
+                let sum = sum + shiftedX;
+            }
+            let shiftedX = shiftedX + shiftedX;
+            let index = index + 1;
+        }
+        return sum;
     }
 
     /** Returns the integer part of x / y.
      *  When a Jack compiler detects the division operator '/'
      *  an an expression, it handles it by invoking this method.
      *  Thus, x/y and Math.divide(x,y) return the same value. */
-    function int divide(int x, int y) {
+    function int divide(int x, int y) 
+    {
+        var int retVal;
+        var boolean xIsPos;
+        var boolean yIsPos;
+        var int q;
+
+        let xIsPos = ((x = 0) | (x > 0));
+        let yIsPos = ((y = 0) | (y > 0));
+
+        let x = Math.abs(x);
+        let y = Math.abs(y);
+
+        if ((y > x) | (y < 0))
+        {
+            let retVal = 0;
+        }
+        else
+        {
+            let q = Math.divide(x, (2 * y));
+            if ((x - (2 * q * y)) < y)
+            {
+                let retVal = 2 * q;
+            }
+            else
+            {
+                let retVal = (2 * q) + 1;
+            }
+        }
+
+        if (~(xIsPos = yIsPos))
+        {
+            let retVal = retVal * -1;
+        }
+        return retVal;
     }
 
     /** Returns the integer part of the square root of x. */
-    function int sqrt(int x) {
+    function int sqrt(int x) 
+    {
+        var int j;
+        var int y;
+        var int tempCalc;
+
+        let y = 0;
+        let j = (n / 2) - 1;
+        while(j > -1)
+        {
+            let tempCalc = (y + powersOfTwo[j]) * (y + powersOfTwo[j]);
+            if ( (~(tempCalc > x) & (tempCalc > 0)) )
+            {
+                let y = y + powersOfTwo[j];
+            }
+            let j = j - 1;
+        }
+        return y;
     }
 
+
     /** Returns the greater value. */
-    function int max(int a, int b) {
+    function int max(int a, int b) 
+    {
+        var int retVal;
+
         if (a < b)
         {
-            return b;
+            let retVal = b;
         }
         else
         {
-            return a;
+            let retVal = a;
         }
+        return retVal;
     }
 
     /** Returns the smaller value. */
-    function int min(int a, int b) {
+    function int min(int a, int b) 
+    {
+        var int retVal;
+
         if (a > b)
         {
-            return b;
+            let retVal =  b;
         }
         else
         {
-            return a;
+            let retVal = a;
         }
+        return retVal;
     }
 
     /** Returns the absolute value of x. */
-    function int abs(int x) {
-        if (a < 0)
+    function int abs(int x) 
+    {
+        var int retVal;
+
+        if (x < 0)
         {
-            return Math.multiply(a * -1)
+            let retVal = Math.multiply(x, -1);
         }
         else
         {
-            return a;
+            let retVal = x;
         }
+        return retVal;
+    }
+
+    function boolean bit(int x, int i)
+    {
+        var int maskedVal;
+        let maskedVal = x & powersOfTwo[i];
+        return ((maskedVal > 0) | (maskedVal < 0));
     }
 }
