@@ -9,55 +9,173 @@
  * for appending a character to the string's end, and more typical
  * string-oriented operations.
  */
-class String {
+class String 
+{
+    field Array myString;
+    field int maxSize;
+    field int currentSize;
 
     /** constructs a new empty string with a maximum length of maxLength
      *  and initial length of 0. */
-    constructor String new(int maxLength) {
+    constructor String new(int maxLength) 
+    {
+        let currentSize = 0;
+        let maxSize = maxLength;
+        if (maxSize = 0)
+        {
+            let maxSize = 1;
+        }
+
+        let myString = Array.new(maxSize);
+        return this;
+
     }
 
     /** Disposes this string. */
-    method void dispose() {
+    method void dispose() 
+    {
+        do Memory.deAlloc(myString);
+        return;
     }
 
     /** Returns the current length of this string. */
-    method int length() {
+    method int length() 
+    {
+        return currentSize;
     }
 
     /** Returns the character at the j-th location of this string. */
-    method char charAt(int j) {
+    method char charAt(int j) 
+    {
+        var int retChar;
+        let retChar = 0;
+        if ((j > -1) & (j < maxSize))
+        {
+            let retChar = myString[j];
+        }
+        return retChar;
     }
 
     /** Sets the character at the j-th location of this string to c. */
-    method void setCharAt(int j, char c) {
+    method void setCharAt(int j, char c) 
+    {
+        if ((j > -1) & (j < maxSize))
+        {
+           let myString[j] = c;
+        }
+        return;
     }
 
     /** Appends c to this string's end and returns this string. */
-    method String appendChar(char c) {
+    method String appendChar(char c) 
+    {
+        if (currentSize < maxSize)
+        {
+            let myString[currentSize] = c;
+            let currentSize = currentSize + 1;
+        }
+        return this;
     }
 
     /** Erases the last character from this string. */
-    method void eraseLastChar() {
+    method void eraseLastChar() 
+    {
+        let currentSize = currentSize - 1;
+        return;
     }
 
     /** Returns the integer value of this string, 
      *  until a non-digit character is detected. */
-    method int intValue() {
+    method int intValue() 
+    {
+        var int i, sum;
+        var boolean isNegative, isDigit;
+        var char c;
+
+        let sum = 0;
+        let isDigit = true;
+        let i = 0;
+
+        if (charAt(i) = 45)
+        {
+            let isNegative = true;
+            let i = i + 1;
+        }
+
+        while ((i < currentSize) & isDigit)
+        {
+            let c = myString[i];
+            if ((c > 47) & (c < 57))
+            {
+                if (i > 0)
+                {
+                    let sum = sum * 10;
+                }
+                let sum = sum + (c - 48);
+            }
+            else
+            {
+                let isDigit = false;
+            }
+            let i = i + 1;
+        }
+
+        if (isNegative)
+        {
+            let sum = sum * -1;
+        }
+        return sum;
     }
 
     /** Sets this string to hold a representation of the given value. */
-    method void setInt(int val) {
+    method void setInt(int val) 
+    {        
+        let currentSize = 0;
+
+        if (val < 0)
+        {
+            do appendChar(45);
+            let val = -val;
+        }
+        do recursiveSetInt(val);
+        return;
+    }
+
+
+    method void recursiveSetInt(int val)
+    {
+        var int q, modulo;
+
+        let q = val / 10;
+        let modulo = val - (q * 10);
+        
+        if (val > 10)
+        {
+            do recursiveSetInt(q);
+            do appendChar(48 + modulo);            
+        }
+        else
+        {
+            do appendChar(48 + modulo);
+        }
+        return;
     }
 
     /** Returns the new line character. */
-    function char newLine() {
+    function char newLine() 
+    {
+        return 128;
     }
 
     /** Returns the backspace character. */
-    function char backSpace() {
+    function char backSpace() 
+    {
+        return 129;
     }
 
     /** Returns the double quote (") character. */
-    function char doubleQuote() {
+    function char doubleQuote() 
+    {
+        return 34;
     }
 }

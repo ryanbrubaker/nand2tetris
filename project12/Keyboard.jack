@@ -131,7 +131,7 @@ class Keyboard
             let i = i + 1;
         }
 
-        while (i < input.length())
+        while (i < input.length() & (isDigit))
         {
             let c = input.charAt(i);
             if ((c > 47) & (c < 57))
