@@ -15,14 +15,9 @@
  */
 class Output {
 
-    // 256 pixels         X         512 pixels
-    // 23 rows            x         64 cols
-    // 11 pixels high     X         8 pixels wide  
-
     // Character map for displaying characters
     static Array charMaps;
     static Array screen;
-    //static Array wordMasks;
 
     static int row;
     static int col;
@@ -32,13 +27,6 @@ class Output {
     function void init() 
     { 
         let screen = 16384;
-        
-        // Masks are necessary because Jack's font only takes up 8 pixels so we 
-        // have to write half-words
-        //let wordMasks = Array.new(2);
-        //let wordMasks[0] = 255;
-        //let wordMasks[1] = =1 & 255;
-
         let row = 0;
         let col = 0;
 

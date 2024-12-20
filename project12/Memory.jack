@@ -9,25 +9,81 @@
  */ 
 class Memory {
 
+    static array ram;
+    static array heap;
+    static int freeList;
+
     /** Initializes the class. */
-    function void init() {
+    function void init() 
+    {
+        let ram = 0;
+        let heap = 2048;
+        let freeList = heap;
+
+        let heap[0] = 0;
+        let heap[1] = 14335;
+
+        return;
     }
 
+
     /** Returns the RAM value at the given address. */
-    function int peek(int address) {
+    function int peek(int address) 
+    {
+        return ram[address];
     }
 
     /** Sets the RAM value at the given address to the given value. */
-    function void poke(int address, int value) {
+    function void poke(int address, int value) 
+    {
+        let ram[address] = value;
+        return;
     }
 
     /** Finds an available RAM block of the given size and returns
      *  a reference to its base address. */
-    function int alloc(int size) {
+    function int alloc(int size) 
+    {
+        var int freeBlock, prevBlock, nextFreeBlock;
+
+        let prevBlock = 0;
+        let freeBlock = freeList;
+        while (freeBlock[1] < size)
+        {
+            let prevBlock = freeBlock;
+            let freeBlock = freeBlock[0];
+            if (freeBlock = 0)
+            {
+                return 0;
+            }
+        }
+
+
+        let nextFreeBlock = freeBlock + size + 2;
+        let nextFreeBlock[0] = freeBlock[0];
+        let nextFreeBlock[1] = freeBlock[1] - size - 2;
+
+        let freeBlock[0] = null;
+        let freeBlock[1] = size;
+
+
+        if (prevBlock = 0)
+        {
+            let freeList = nextFreeBlock;
+        }
+        else
+        {
+            let prevBlock[0] = nextFreeBlock;
+        }
+
+        return freeBlock + 2;
     }
 
     /** De-allocates the given object (cast as an array) by making
      *  it available for future allocations. */
-    function void deAlloc(Array o) {
+    function void deAlloc(Array o) 
+    {
+        let freeList[0] = o - 2;
+        return;
     }    
 }
